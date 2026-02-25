@@ -30,6 +30,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     
     is_active = models.BooleanField(default=True, db_index=True)
     is_staff = models.BooleanField(default=False)
+    credits = models.IntegerField(default=100)
 
     objects = UserManager()
 

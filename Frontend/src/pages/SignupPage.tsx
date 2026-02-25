@@ -11,6 +11,7 @@ export const SignupPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isSuccess, setIsSuccess] = useState(false);
     const { signup } = useAuth();
     const navigate = useNavigate();
 
@@ -20,7 +21,10 @@ export const SignupPage: React.FC = () => {
         setError(null);
         try {
             await signup(name, email, password);
-            navigate('/dashboard');
+            setIsSuccess(true);
+            setTimeout(() => {
+                navigate('/login', { state: { message: 'Identity initialized. Please provide credentials to enter the vault.' } });
+            }, 2000);
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'Identity synchronization failed. Please check your credentials.');
@@ -45,6 +49,12 @@ export const SignupPage: React.FC = () => {
                 </div>
 
                 <Card glass className="p-10 border-white/5 shadow-2xl relative overflow-hidden group border-t-accent-primary/20">
+                    {isSuccess && (
+                        <div className="mb-6 p-4 rounded-xl bg-accent-success/10 border border-accent-success/20 text-accent-success text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse" />
+                            Success: Identity handle created. Redirecting to access protocol...
+                        </div>
+                    )}
                     {error && (
                         <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />

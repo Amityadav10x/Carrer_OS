@@ -38,9 +38,9 @@ const authService = {
         }
     },
 
-    async signup(credentials: SignupCredentials): Promise<AuthResponse> {
+    async signup(credentials: SignupCredentials): Promise<{ user: User }> {
         try {
-            const response = await axios.post<ApiResponse<AuthResponse>>(`${API_URL}/signup/`, credentials);
+            const response = await axios.post<ApiResponse<{ user: User }>>(`${API_URL}/signup/`, credentials);
             if (response.data.status === 'success') {
                 return response.data.data;
             }

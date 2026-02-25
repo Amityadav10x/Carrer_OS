@@ -15,6 +15,7 @@ export const LoginPage: React.FC = () => {
     const location = useLocation();
 
     const from = (location.state as any)?.from?.pathname || "/dashboard";
+    const successMessage = (location.state as any)?.message;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,6 +48,12 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <Card glass className="p-10 border-white/5 shadow-2xl relative overflow-hidden group">
+                    {successMessage && !error && (
+                        <div className="mb-6 p-4 rounded-xl bg-accent-success/10 border border-accent-success/20 text-accent-success text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse" />
+                            {successMessage}
+                        </div>
+                    )}
                     {error && (
                         <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />

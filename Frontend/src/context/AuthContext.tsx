@@ -43,10 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const signup = async (name: string, email: string, password: string) => {
         setLoading(true);
         try {
-            const { user, tokens } = await authService.signup({ name, email, password });
-            setUser(user);
-            localStorage.setItem('career_os_access_token', tokens.access);
-            localStorage.setItem('career_os_refresh_token', tokens.refresh);
+            await authService.signup({ name, email, password });
+            // We no longer set user or store tokens here.
+            // User must manually log in.
         } catch (error) {
             console.error('Signup failed', error);
             throw error;

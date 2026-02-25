@@ -9,6 +9,8 @@ class Resume(BaseModel):
     overall_score = models.IntegerField(default=0)
     normalized = models.BooleanField(default=True)
     extracted_skills = models.JSONField(default=list)
+    strengths = models.JSONField(default=list)
+    weaknesses = models.JSONField(default=list)
 
     def __str__(self):
         return f"{self.user.email} - v{self.version} ({self.overall_score})"

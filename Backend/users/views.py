@@ -22,19 +22,14 @@ class SignupView(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             user = serializer.save()
             
-            refresh = RefreshToken.for_user(user)
             user_data = UserSerializer(user).data
             
             return api_response(
                 data={
-                    "user": user_data,
-                    "tokens": {
-                        "access": str(refresh.access_token),
-                        "refresh": str(refresh)
-                    }
+                    "user": user_data
                 },
                 status_code=status.HTTP_201_CREATED,
-                message="User registered successfully"
+                message="User registered successfully. Please proceed to login."
             )
         except ValidationError as e:
             # Extract the first error message

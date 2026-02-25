@@ -97,13 +97,15 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
 }
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True # In production, specify actual origins
+# AI Configuration
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 
 ROOT_URLCONF = 'config.urls'
 
