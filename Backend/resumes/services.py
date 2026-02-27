@@ -117,7 +117,8 @@ class ResumeAnalysisService:
                     normalized=True,
                     extracted_skills=analysis_data.extracted_skills,
                     strengths=analysis_data.strengths,
-                    weaknesses=analysis_data.weaknesses
+                    weaknesses=analysis_data.weaknesses,
+                    raw_content=raw_text
                 )
 
                 # Save Suggestions
@@ -150,3 +151,72 @@ class ResumeAnalysisService:
             job.error_message = str(e)
             job.save()
             raise e
+
+class ResumeExportService:
+    @staticmethod
+    def generate_pdf(resume: Resume) -> bytes:
+        """Generates a professional PDF report from resume analysis data."""
+        from io import BytesIO
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+        styles = getSampleStyleSheet()
+        
+        # Custom Styles
+        title_style = ParagraphStyle(
+            'TitleStyle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor("#4F46E5"),
+            spaceAfter=20
+        )
+        section_style = ParagraphStyle(
+            'SectionStyle',
+            parent=styles['Heading2'],
+            fontSize=16,
+            textColor=colors.HexColor("#1E293B"),
+            spaceBefore=15,
+            spaceAfter=10
+        )
+        body_style = styles['Normal']
+
+        elements = []
+
+        # Title
+        elements.append(Paragraph(f"Resume Intelligence Report", title_style))
+        elements.append(Paragraph(f"Score: {resume.overall_score}/100", styles['Heading3']))
+        elements.append(Spacer(1, 12))
+
+        # Core Strengths
+        elements.append(Paragraph("Core Strengths", section_style))
+        for strength in resume.strengths:
+            elements.append(Paragraph(f"• {strength}", body_style))
+            elements.append(Spacer(1, 6))
+
+        # Areas for Improvement
+        elements.append(Paragraph("Critical Gains", section_style))
+        for weakness in resume.weaknesses:
+            elements.append(Paragraph(f"• {weakness}", body_style))
+            elements.append(Spacer(1, 6))
+
+        # Extracted Skills
+        elements.append(Paragraph("Extracted Skills", section_style))
+        skills_text = ", ".join(resume.extracted_skills)
+        elements.append(Paragraph(skills_text, body_style))
+        elements.append(Spacer(1, 12))
+
+        # AI Recommendations
+        elements.append(Paragraph("AI Recommendations", section_style))
+        for suggestion in resume.suggestions.all():
+            elements.append(Paragraph(f"Target Segment: {suggestion.original[:50]}...", styles['Italic']))
+            elements.append(Paragraph(f"<b>Improved:</b> {suggestion.improved}", body_style))
+            elements.append(Spacer(1, 12))
+
+        doc.build(elements)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        return pdf_data

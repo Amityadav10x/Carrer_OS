@@ -95,3 +95,30 @@ class ResumeDetailView(generics.RetrieveAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return api_response(data=serializer.data)
+
+from django.http import HttpResponse
+from .services import ResumeExportService
+
+class ResumeExportView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id, *args, **kwargs):
+        try:
+            resume = Resume.objects.get(id=id, user=request.user)
+            pdf_data = ResumeExportService.generate_pdf(resume)
+            
+            response = HttpResponse(pdf_data, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="Resume_Report_{resume.id}.pdf"'
+            return response
+        except Resume.DoesNotExist:
+            return api_response(
+                status_code=status.HTTP_404_NOT_FOUND,
+                error_code="RESUME_NOT_FOUND",
+                message="Resume not found"
+            )
+        except Exception as e:
+            return api_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="EXPORT_FAILED",
+                message=str(e)
+            )

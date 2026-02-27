@@ -104,6 +104,8 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
+CORS_ALLOW_ALL_ORIGINS = True
+
 # AI Configuration
 GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 

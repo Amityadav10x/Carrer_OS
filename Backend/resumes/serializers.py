@@ -14,5 +14,5 @@ class ResumeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'version', 'overall_score', 'normalized', 
             'extracted_skills', 'strengths', 'weaknesses', 'suggestions',
-            'created_at'
+            'raw_content', 'created_at'
         ]
