@@ -1,350 +1,430 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Zap, BarChart3, Map, MessageSquare, CheckCircle2, Sparkles } from 'lucide-react';
+import {
+    ArrowRight, Zap, Map, MessageSquare,
+    CheckCircle2, Sparkles, Zap as ZapIcon,
+    ChevronDown, Play, Star, Users, Briefcase,
+    Shield, Globe, BarChart3, Search, Activity,
+    Cpu, Target, TrendingUp, Award, Minus
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 
+const logos = [
+    { name: 'Google', url: '#' },
+    { name: 'Microsoft', url: '#' },
+    { name: 'Amazon', url: '#' },
+    { name: 'Meta', url: '#' },
+    { name: 'Apple', url: '#' },
+    { name: 'Netflix', url: '#' }
+];
+
 const features = [
     {
-        icon: BarChart3,
-        title: 'AI Resume Analyzer',
-        description:
-            'Get instant AI-powered analysis of your resume. Identify strengths, gaps, and receive targeted rewrite suggestions aligned to job descriptions.',
-        badge: 'Powered by GPT-4',
-        color: '#4F46E5',
+        icon: ZapIcon,
+        title: 'AI Resume Intelligence',
+        description: 'Advanced NLP analysis of your resume with instant scoring and actionable recommendations.',
+        color: '#6366F1'
     },
     {
-        icon: Map,
-        title: 'Personalized Roadmap',
-        description:
-            'Receive a 30-60-90 day skill development roadmap tailored to your target role, current skills, and market demand.',
-        badge: 'Custom to You',
-        color: '#22D3EE',
+        icon: Target,
+        title: 'Skill Gap Analysis',
+        description: 'Compare your skills against market demands and get personalized development plans.',
+        color: '#22D3EE'
     },
     {
         icon: MessageSquare,
-        title: 'Smart Interview Coach',
-        description:
-            'Practice with an AI interviewer that evaluates your answers, tracks improvement over time, and provides real-time scoring.',
-        badge: 'Real-time Feedback',
-        color: '#8B5CF6',
-    },
-];
-
-const pricingPlans = [
-    {
-        name: 'Free',
-        price: '$0',
-        period: '/month',
-        features: [
-            '1 Resume Analysis',
-            'Basic Skill Assessment',
-            '5 Interview Questions / month',
-            'Standard Roadmap',
-            'Email Support',
-        ],
-        highlighted: false,
+        title: 'Interview Simulator',
+        description: 'Practice with adaptive AI that provides real-time feedback and improves with each session.',
+        color: '#8B5CF6'
     },
     {
-        name: 'Pro',
-        price: '$29',
-        period: '/month',
-        features: [
-            'Unlimited Resume Analyses',
-            'Advanced AI Skill Gap Detection',
-            'Unlimited Interview Practice',
-            'Personalized 90-Day Roadmap',
-            'Analytics Dashboard',
-            'Priority AI Support',
-            '10,000 AI Tokens / month',
-        ],
-        highlighted: true,
+        icon: BarChart3,
+        title: 'Career Analytics',
+        description: 'Track your progress with detailed insights and market benchmarking.',
+        color: '#F43F5E'
     },
+    {
+        icon: Map,
+        title: 'Learning Roadmaps',
+        description: 'AI-generated personalized learning paths based on your goals and current skill level.',
+        color: '#10B981'
+    },
+    {
+        icon: Activity,
+        title: 'Real-time Insights',
+        description: 'Get instant feedback and suggestions powered by cutting-edge AI models.',
+        color: '#F59E0B'
+    }
 ];
 
-const DashboardPreview: React.FC = () => (
-    <div className="relative w-full max-w-[540px]">
-        {/* Glow behind preview */}
-        <div className="absolute inset-0 -z-10 blur-[100px] bg-gradient-to-br from-[#4F46E5]/40 via-[#22D3EE]/20 to-transparent rounded-full" />
-        <Card glass className="p-0 overflow-hidden shadow-2xl border-white/10 ring-1 ring-white/5">
-            {/* Mockup header */}
-            <div className="h-10 bg-[#111827]/80 flex items-center gap-2 px-4 border-b border-white/5">
-                <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444]/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#10B981]/60" />
-                </div>
-                <div className="ml-auto flex gap-4">
-                    <div className="w-16 h-1.5 rounded bg-white/5" />
-                    <div className="w-20 h-1.5 rounded bg-white/5" />
-                </div>
-            </div>
-            <div className="p-6">
-                {/* Mock metric row */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                    {[
-                        { label: 'Resume Score', value: '84', color: '#4F46E5' },
-                        { label: 'Interview Avg', value: '78%', color: '#10B981' },
-                        { label: 'Skills Gaps', value: '6', color: '#F59E0B' },
-                    ].map((m) => (
-                        <div key={m.label} className="bg-bg-main/50 rounded-xl p-3 border border-white/5">
-                            <div className="text-[10px] uppercase tracking-wider text-[#64748B] mb-1 font-bold">{m.label}</div>
-                            <div className="text-xl font-bold" style={{ color: m.color }}>{m.value}</div>
-                        </div>
-                    ))}
-                </div>
-                {/* Mock radar placeholder */}
-                <div className="bg-bg-main/50 rounded-xl p-5 border border-white/5 mb-5">
-                    <div className="text-xs text-[#94A3B8] font-semibold mb-4">Skill Proficiency</div>
-                    <div className="flex items-end justify-between h-24 gap-2">
-                        {[70, 85, 45, 90, 60, 50, 75].map((h, i) => (
-                            <div key={i} className="flex-1 rounded-t-md relative group" style={{
-                                height: `${h}%`,
-                                background: `linear-gradient(to top, #4F46E5, #22D3EE)`,
-                                boxShadow: `0 0 15px ${i % 2 === 0 ? '#4F46E533' : '#22D3EE33'}`
-                            }}>
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1F2937] text-[8px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">{h}%</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {/* Mock activity */}
-                <div className="space-y-3">
-                    <div className="text-[10px] uppercase tracking-wider text-[#64748B] font-bold px-1">Recent Activity</div>
-                    {['Resume Analyzed — Score: 84', 'Mock Interview Completed — 82%'].map((text, i) => (
-                        <div key={text} className="flex items-center gap-3 text-xs text-[#94A3B8] bg-white/5 p-2.5 rounded-lg border border-white/5">
-                            <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-[#4F46E5]' : 'bg-[#22D3EE]'} shadow-[0_0_8px_rgba(79,70,229,0.5)]`} />
-                            {text}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </Card>
+const stats = [
+    { label: 'Active Users', val: '10K+', color: '#6366F1' },
+    { label: 'Success Rate', val: '95%', color: '#22D3EE' },
+    { label: 'Interviews Simulated', val: '500K+', color: '#8B5CF6' },
+    { label: 'User Rating', val: '4.9/5', color: '#F43F5E' }
+];
+
+const testimonials = [
+    {
+        text: "CareerOS AI helped me identify skill gaps I didn't even know I had. Landed my dream job within 3 months!",
+        author: "Sarah Johnson",
+        role: "Senior Software Engineer @ Google",
+        initial: "S"
+    },
+    {
+        text: "The interview simulator is incredible. It's like having a personal career coach available 24/7.",
+        author: "Michael Chen",
+        role: "Product Manager @ Microsoft",
+        initial: "M"
+    },
+    {
+        text: "The personalized learning roadmap was exactly what I needed. Saved me months of figuring out what to learn.",
+        author: "Emily Rodriguez",
+        role: "Data Scientist @ Amazon",
+        initial: "E"
+    }
+];
+
+const comparisonData = [
+    { feature: 'AI Resume Analysis', careeros: true, traditional: false, competitors: true },
+    { feature: 'Personalized Learning Paths', careeros: true, traditional: false, competitors: false },
+    { feature: 'Interview Simulator', careeros: true, traditional: false, competitors: true },
+    { feature: 'Real-time Market Insights', careeros: true, traditional: false, competitors: false },
+    { feature: 'Career Analytics Dashboard', careeros: true, traditional: false, competitors: false },
+    { feature: 'Unlimited Practice Sessions', careeros: true, traditional: false, competitors: false },
+    { feature: '24/7 AI Assistance', careeros: true, traditional: false, competitors: false },
+];
+
+const InteractiveBackground: React.FC = () => (
+    <div className="fixed inset-0 -z-10 bg-bg-main overflow-hidden pointer-events-none">
+        <div className="bg-grid absolute inset-0 opacity-20" />
+        <div className="bg-network absolute inset-0 opacity-10" />
+
+        {/* Animated Orbs */}
+        <div className="glow-orb -top-20 -left-20 animate-float-slow opacity-30" />
+        <div className="glow-orb top-1/2 -right-40 animate-float-reverse opacity-20" />
+        <div className="glow-orb -bottom-40 left-1/3 animate-float-slow opacity-25" />
+
+        {/* Floating Particles */}
+        {[...Array(20)].map((_, i) => (
+            <div
+                key={i}
+                className="absolute w-1 h-1 bg-accent-primary rounded-full opacity-20 animate-pulse"
+                style={{
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 5}s`,
+                    animationDuration: `${3 + Math.random() * 4}s`
+                }}
+            />
+        ))}
     </div>
 );
+
+const FAQItem = ({ q, a }: { q: string, a: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border-b border-white/5">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full py-6 flex items-center justify-between text-left group"
+            >
+                <span className="text-lg font-bold text-white group-hover:text-accent-cyan transition-colors">{q}</span>
+                <div className={`p-2 rounded-lg bg-white/5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                    <ChevronDown size={20} className="text-[#94A3B8]" />
+                </div>
+            </button>
+            <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'max-h-40 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <p className="text-[#94A3B8] leading-relaxed">{a}</p>
+            </div>
+        </div>
+    );
+};
 
 export const LandingPage: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-[#0B1120] text-text-primary overflow-x-hidden selection:bg-accent-primary/30">
-            {/* Navbar */}
-            <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-[#0B1120]/60 backdrop-blur-xl transition-all duration-300">
-                <div className="max-w-[1440px] mx-auto flex items-center justify-between px-12 py-5">
-                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.4)] group-hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] transition-all">
-                            <Zap size={20} className="text-white fill-white/20" />
+        <div className="relative min-h-screen text-white selection:bg-accent-primary/30 scroll-smooth">
+            <InteractiveBackground />
+
+            {/* Navigation */}
+            <nav className="fixed top-0 left-0 right-0 z-[100] border-b border-white/5 bg-[#0A0B10]/80 backdrop-blur-xl">
+                <div className="max-w-[1440px] mx-auto flex items-center justify-between px-8 md:px-12 py-5">
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+                        <div className="w-9 h-9 rounded-lg bg-accent-primary flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+                            <Zap size={18} className="text-white fill-white/20" />
                         </div>
-                        <span className="font-bold text-xl tracking-tight">
-                            <span className="text-[#F9FAFB]">CareerOS</span>
-                            <span className="text-[#22D3EE]"> AI</span>
-                        </span>
+                        <span className="font-bold text-xl tracking-tight">CareerOS<span className="text-accent-cyan">AI</span></span>
                     </div>
-                    <div className="flex items-center gap-10">
-                        <div className="hidden md:flex items-center gap-8">
-                            <a href="#features" className="text-sm font-medium text-[#94A3B8] hover:text-[#F9FAFB] transition-colors relative group">
-                                Features
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-cyan transition-all group-hover:w-full" />
-                            </a>
-                            <a href="#pricing" className="text-sm font-medium text-[#94A3B8] hover:text-[#F9FAFB] transition-colors relative group">
-                                Pricing
-                                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-cyan transition-all group-hover:w-full" />
-                            </a>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => navigate('/login')} className="text-sm font-semibold text-[#F9FAFB] hover:text-accent-cyan transition-colors px-4 py-2">Sign In</button>
-                            <Button size="md" onClick={() => navigate('/signup')} className="shadow-[0_0_20px_rgba(79,70,229,0.3)]">Get Started</Button>
+                    <div className="hidden md:flex items-center gap-8">
+                        <a href="#features" className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors">Features</a>
+                        <a href="#how-it-works" className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors">How it Works</a>
+                        <a href="#pricing" className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors">Pricing</a>
+                        <div className="flex items-center gap-4 ml-4">
+                            <button onClick={() => navigate('/login')} className="text-sm font-bold opacity-80 hover:opacity-100 px-4 py-2">Sign In</button>
+                            <Button size="sm" onClick={() => navigate('/signup')} className="rounded-full px-6">Get Started</Button>
                         </div>
                     </div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative pt-44 pb-32 px-12 max-w-[1440px] mx-auto min-h-screen flex items-center">
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 -z-10 w-[800px] h-[800px] bg-accent-primary/5 blur-[150px] rounded-full pointer-events-none" />
-                <div className="absolute bottom-0 left-0 -z-10 w-[600px] h-[600px] bg-accent-cyan/5 blur-[150px] rounded-full pointer-events-none" />
+            <section className="relative pt-44 pb-32 px-8">
+                <div className="relative max-w-5xl mx-auto text-center z-10">
+                    <Badge variant="primary" className="mb-8 rounded-full px-4 py-1.5 bg-accent-primary/10 border-accent-primary/20 backdrop-blur-md">
+                        <Sparkles size={14} className="mr-2 text-accent-cyan animate-pulse" />
+                        <span className="text-[10px] uppercase tracking-[0.2em] font-black">Trusted by 10k+ professionals</span>
+                    </Badge>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-20 items-center">
-                    {/* Left Content */}
-                    <div className="flex flex-col items-start translate-y-[-20px]">
-                        <Badge variant="primary" className="mb-8 px-4 py-1.5 bg-accent-primary/10 border-accent-primary/20 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <Sparkles size={14} className="mr-2 text-accent-cyan" />
-                            <span className="text-xs uppercase tracking-widest font-bold">New: Enterprise AI Integration</span>
-                        </Badge>
-                        <h1 className="text-6xl font-black text-[#F9FAFB] leading-[1.1] mb-8 tracking-tight animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                            Your Autonomous <br />
-                            <span className="gradient-text py-2">AI Career</span> <br />
-                            Operating System
-                        </h1>
-                        <p className="text-2xl text-[#F9FAFB] mb-4 font-semibold opacity-90 tracking-tight">
-                            Analyze. Improve. Practice. Evolve.
-                        </p>
-                        <p className="text-lg text-[#94A3B8] mb-12 leading-relaxed max-w-lg font-medium opacity-80">
-                            CareerOS AI analyzes your profile, identifies skill gaps, builds a 90-day roadmap,
-                            and coaches you through mock interviews — all in one unified platform.
-                        </p>
-                        <div className="flex items-center gap-5 flex-wrap">
-                            <Button
-                                size="lg"
-                                onClick={() => navigate('/roadmap')}
-                                className="h-14 px-8 text-base shadow-[0_0_30px_rgba(79,70,229,0.35)] hover:shadow-[0_0_45px_rgba(79,70,229,0.5)] transition-all transform hover:-translate-y-1"
-                                icon={<Map size={20} />}
-                            >
-                                Generate Roadmap
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                onClick={() => navigate('/interview')}
-                                className="h-14 px-8 text-base border-white/10 hover:border-accent-cyan/50 hover:bg-accent-cyan/5 transform hover:-translate-y-1 transition-all"
-                                icon={<MessageSquare size={20} className="text-accent-cyan" />}
-                            >
-                                Practice Interview
-                            </Button>
-                        </div>
-                        <div className="flex items-center gap-8 mt-12 pt-8 border-t border-white/5 w-full">
-                            {[
-                                { t: 'No Credit Card', icon: CheckCircle2 },
-                                { t: 'Free Forever Plan', icon: CheckCircle2 },
-                                { t: 'AI Verified', icon: Sparkles }
-                            ].map(({ t, icon: Icon }) => (
-                                <div key={t} className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-widest text-[#64748B]">
-                                    <Icon size={14} className="text-accent-success" />
-                                    {t}
-                                </div>
-                            ))}
-                        </div>
+                    <h1 className="text-6xl md:text-8xl font-black leading-[0.9] mb-8 tracking-tighter">
+                        Everything You Need to <br />
+                        <span className="gradient-text">Accelerate Your Career</span>
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-[#94A3B8] max-w-3xl mx-auto mb-12 font-medium leading-relaxed opacity-80">
+                        Comprehensive AI-powered tools designed to give you an unfair <br className="hidden md:block" />
+                        advantage in your career journey.
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-24">
+                        <Button
+                            size="lg"
+                            className="h-16 px-10 rounded-full text-lg shadow-[0_0_40px_rgba(99,102,241,0.3)] hover:scale-105 transition-transform"
+                            onClick={() => navigate('/signup')}
+                        >
+                            Start Your Free Trial <ArrowRight size={20} className="ml-2" />
+                        </Button>
                     </div>
 
-                    {/* Right Content - Preview */}
-                    <div className="relative flex justify-center lg:justify-end animate-in fade-in zoom-in duration-1000 delay-300">
-                        <DashboardPreview />
+                    {/* Trusted By Logos */}
+                    <div className="pt-12">
+                        <p className="text-[10px] uppercase tracking-[0.3em] font-black text-[#64748B] mb-8">Trusted by professionals at</p>
+                        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-40">
+                            {logos.map(logo => (
+                                <span key={logo.name} className="text-lg md:text-xl font-bold font-mono tracking-tighter hover:opacity-100 transition-opacity cursor-default">
+                                    {logo.name}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
-            <section id="features" className="py-32 px-12 max-w-[1440px] mx-auto relative">
-                <div className="text-center mb-24 max-w-2xl mx-auto">
-                    <Badge variant="cyan" className="mb-6 uppercase tracking-[0.2em] font-black py-1.5 px-4 bg-accent-cyan/10 border-accent-cyan/30">Intelligence</Badge>
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#F9FAFB] mb-6 tracking-tight">Everything You Need to Land Your Dream Role</h2>
-                    <p className="text-xl text-[#94A3B8] leading-relaxed font-medium">
-                        An end-to-end AI-powered career acceleration platform that works 24/7 on your behalf.
-                    </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {features.map(({ icon: Icon, title, description, badge, color }) => (
-                        <Card key={title} glass hoverable className="group p-8 border-white/5 hover:border-white/10 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div
-                                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 relative transition-transform duration-500 group-hover:scale-110"
-                                style={{ background: `${color}15`, border: `1px solid ${color}30`, boxShadow: `0 8px 30px ${color}1a` }}
-                            >
-                                <Icon size={26} style={{ color }} />
-                            </div>
-                            <div style={{ color: color }}>
-                                <Badge className="mb-6 py-1 px-3 bg-white/5 border-white/10 uppercase tracking-widest text-[10px] font-black">
-                                    {badge}
-                                </Badge>
-                            </div>
-                            <h3 className="text-xl font-bold text-[#F9FAFB] mb-4 group-hover:text-accent-cyan transition-colors">{title}</h3>
-                            <p className="text-[#94A3B8] leading-relaxed font-medium text-sm opacity-80 group-hover:opacity-100 transition-opacity">{description}</p>
-                            <div className="mt-8 flex items-center gap-2 text-sm font-bold uppercase tracking-widest cursor-pointer hover:gap-4 transition-all" style={{ color: color }}>
-                                Explore Feature <ArrowRight size={16} />
-                            </div>
+            {/* Stats Grid */}
+            <section className="pb-32 px-8">
+                <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {stats.map(s => (
+                        <Card key={s.label} glass className="p-8 border-white/5 hover:border-white/10 transition-all text-center group">
+                            <div className="text-4xl md:text-5xl font-black mb-2 group-hover:scale-110 transition-transform" style={{ color: s.color }}>{s.val}</div>
+                            <div className="text-[10px] uppercase font-black tracking-widest text-[#64748B]">{s.label}</div>
                         </Card>
                     ))}
                 </div>
             </section>
 
-            {/* Pricing Section split into more visual layout */}
-            <section id="pricing" className="py-32 px-12 max-w-[1440px] mx-auto relative bg-[#0B1120]/40 rounded-[40px] border border-white/5 mb-32 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-accent-primary/5 to-transparent -z-10" />
-                <div className="text-center mb-24">
-                    <Badge variant="purple" className="mb-6 uppercase tracking-[0.2em] font-black py-1.5 px-4 bg-accent-purple/10 border-accent-purple/30">Plans</Badge>
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-[#F9FAFB] mb-6 tracking-tight">Flexible Intelligence</h2>
-                    <p className="text-xl text-[#94A3B8] font-medium">Start free. Upgrade when you're ready to accelerate.</p>
+            {/* Features Grid */}
+            <section id="features" className="py-32 px-8 max-w-[1440px] mx-auto">
+                <div className="text-center mb-20">
+                    <Badge variant="cyan" className="mb-6 uppercase tracking-[0.2em] font-black px-4 py-1">Powerful Features</Badge>
+                    <h2 className="text-4xl md:text-6xl font-black mb-6">Built for Success</h2>
+                    <p className="text-xl text-[#94A3B8] max-w-2xl mx-auto">One platform that handles your entire professional workflow.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-[960px] mx-auto">
-                    {pricingPlans.map((plan) => (
-                        <div
-                            key={plan.name}
-                            className={`relative rounded-[32px] p-10 border transition-all duration-500 hover:-translate-y-2 ${plan.highlighted
-                                ? 'bg-[#1F2937]/40 border-accent-primary/40 shadow-[0_40px_100px_rgba(79,70,229,0.15)] ring-1 ring-accent-primary/20'
-                                : 'bg-[#1F2937]/20 border-white/5 hover:border-white/10'
-                                }`}
-                        >
-                            {plan.highlighted && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent-primary px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-accent-primary/30">
-                                    Highly Recommended
-                                </div>
-                            )}
-                            <div className="flex justify-between items-start mb-10">
-                                <div>
-                                    <h3 className="text-2xl font-bold text-[#F9FAFB] mb-2">{plan.name}</h3>
-                                    <p className="text-sm text-[#64748B] font-medium">For {plan.name === 'Free' ? 'early explorers' : 'career accelerators'}</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="flex items-baseline justify-end gap-1">
-                                        <span className="text-4xl font-black text-[#F9FAFB]">{plan.price}</span>
-                                        <span className="text-sm text-[#64748B] font-bold">{plan.period}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-4 mb-12">
-                                {plan.features.map((f) => (
-                                    <div key={f} className="flex items-center gap-4 text-sm font-medium text-[#94A3B8]">
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${plan.highlighted ? 'bg-accent-primary/20' : 'bg-white/5'}`}>
-                                            <CheckCircle2 size={12} className={plan.highlighted ? 'text-accent-primary' : 'text-accent-success'} />
-                                        </div>
-                                        {f}
-                                    </div>
-                                ))}
-                            </div>
-                            <Button
-                                variant={plan.highlighted ? 'primary' : 'outline'}
-                                size="lg"
-                                fullWidth
-                                onClick={() => navigate('/dashboard')}
-                                className={`h-14 font-black uppercase tracking-widest text-xs transition-all ${plan.highlighted ? 'shadow-xl shadow-accent-primary/20' : 'border-white/10 hover:border-white/30'}`}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {features.map((f) => (
+                        <Card key={f.title} glass className="p-8 border-white/5 hover:border-accent-primary/30 transition-all group relative overflow-hidden h-full">
+                            <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center mb-10"
+                                style={{ backgroundColor: `${f.color}15`, border: `1px solid ${f.color}30` }}
                             >
-                                {plan.highlighted ? 'Get Access Now' : 'Join Free'}
-                            </Button>
-                        </div>
+                                <f.icon size={24} style={{ color: f.color }} />
+                            </div>
+                            <h3 className="text-2xl font-black mb-4 group-hover:text-accent-cyan transition-colors">{f.title}</h3>
+                            <p className="text-[#94A3B8] leading-relaxed mb-4">{f.description}</p>
+                        </Card>
                     ))}
                 </div>
             </section>
 
-            {/* Sticky Footer CTA or simple footer */}
-            <footer className="border-t border-white/5 py-16 px-12 bg-[#0B1120]">
-                <div className="max-w-[1440px] mx-auto">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-                        <div className="flex flex-col items-center md:items-start gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center">
-                                    <Zap size={16} className="text-white fill-white/20" />
-                                </div>
-                                <span className="text-[#F9FAFB] text-lg font-bold">CareerOS AI</span>
+            {/* How it Works */}
+            <section id="how-it-works" className="py-32 px-8 bg-white/[0.02] border-y border-white/5 relative overflow-hidden">
+                <div className="max-w-6xl mx-auto relative z-10">
+                    <div className="text-center mb-24">
+                        <h2 className="text-4xl md:text-6xl font-black mb-6">How It <span className="text-accent-primary">Works</span></h2>
+                        <p className="text-lg text-[#94A3B8]">Get started in minutes and see results immediately</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {[
+                            { step: '01', title: 'Upload Your Resume', desc: 'Simply drag and drop your resume or paste your LinkedIn profile.', icon: Briefcase },
+                            { step: '02', title: 'AI Analysis', desc: 'Our AI analyzes your skills, experience, and identifies improvement areas.', icon: Cpu },
+                            { step: '03', title: 'Get Your Roadmap', desc: 'Receive a personalized learning path and actionable recommendations.', icon: Globe },
+                            { step: '04', title: 'Practice & Improve', desc: 'Use our interview simulator and track your progress in real-time.', icon: TrendingUp }
+                        ].map((s) => (
+                            <div key={s.step} className="text-center group">
+                                <Card glass className="p-8 mb-6 border-white/5 group-hover:border-accent-primary/20 transition-all relative overflow-hidden aspect-square flex flex-col items-center justify-center">
+                                    <div className="absolute top-4 left-4 text-4xl font-black text-white/5">{s.step}</div>
+                                    <div className="w-14 h-14 rounded-2xl bg-accent-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <s.icon size={28} className="text-accent-primary" />
+                                    </div>
+                                    <h3 className="text-xl font-black mb-2">{s.title}</h3>
+                                </Card>
+                                <p className="text-sm text-[#94A3B8] leading-relaxed">{s.desc}</p>
                             </div>
-                            <p className="text-sm text-[#64748B] max-w-xs text-center md:text-left font-medium">
-                                The world's first autonomous AI career operating system.
-                            </p>
-                        </div>
-                        <div className="flex gap-12 text-sm font-bold uppercase tracking-widest text-[#64748B]">
-                            <a href="#" className="hover:text-accent-cyan transition-colors">Platform</a>
-                            <a href="#" className="hover:text-accent-cyan transition-colors">Resources</a>
-                            <a href="#" className="hover:text-accent-cyan transition-colors">Company</a>
-                        </div>
+                        ))}
                     </div>
-                    <div className="mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-xs font-medium text-[#64748B]">© 2026 CareerOS AI. All rights reserved.</p>
-                        <div className="flex gap-8 text-xs font-bold uppercase tracking-widest text-[#64748B]">
-                            <a href="#" className="hover:text-[#F9FAFB]">Privacy Policy</a>
-                            <a href="#" className="hover:text-[#F9FAFB]">Terms of Service</a>
-                        </div>
+                </div>
+            </section>
+
+            {/* Testimonials */}
+            <section className="py-32 px-8">
+                <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-24">
+                        <h2 className="text-4xl md:text-6xl font-black mb-6">Loved by <span className="text-accent-cyan">Thousands</span></h2>
+                        <p className="text-lg text-[#94A3B8]">See what our users have to say about their experience</p>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {testimonials.map(t => (
+                            <Card key={t.author} glass className="p-8 border-white/5 hover:border-white/10 transition-all flex flex-col h-full">
+                                <div className="flex gap-1 mb-6">
+                                    {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-accent-warning fill-accent-warning" />)}
+                                </div>
+                                <p className="text-[#94A3B8] italic mb-8 flex-1 leading-relaxed">"{t.text}"</p>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-accent-primary flex items-center justify-center font-bold text-sm">
+                                        {t.initial}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-sm text-white">{t.author}</div>
+                                        <div className="text-[10px] text-[#64748B] uppercase tracking-wider">{t.role}</div>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Comparison Table */}
+            <section className="py-32 px-8 bg-white/[0.02] border-y border-white/5">
+                <div className="max-w-4xl mx-auto overflow-x-auto">
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl md:text-5xl font-black mb-6">Why Choose <span className="text-accent-primary">CareerOS AI</span></h2>
+                        <p className="text-lg text-[#94A3B8]">See how we compare to traditional career coaching and other platforms</p>
+                    </div>
+
+                    <table className="w-full compare-table">
+                        <thead>
+                            <tr>
+                                <th className="text-left">Feature</th>
+                                <th>CareerOS AI</th>
+                                <th>Traditional</th>
+                                <th>Competitors</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {comparisonData.map(d => (
+                                <tr key={d.feature} className="hover:bg-white/5 transition-colors">
+                                    <td className="text-sm font-medium">{d.feature}</td>
+                                    <td className="text-center">
+                                        {d.careeros ? <CheckCircle2 size={18} className="text-accent-success mx-auto" /> : <Minus size={18} className="text-white/10 mx-auto" />}
+                                    </td>
+                                    <td className="text-center">
+                                        {d.traditional ? <CheckCircle2 size={18} className="text-accent-success mx-auto" /> : <div className="w-4 h-4 rounded-full border-2 border-white/10 mx-auto" />}
+                                    </td>
+                                    <td className="text-center">
+                                        {d.competitors ? <CheckCircle2 size={18} className="text-accent-success mx-auto" /> : <div className="w-4 h-4 rounded-full border-2 border-white/10 mx-auto" />}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            {/* Pricing */}
+            <section id="pricing" className="py-40 px-8 max-w-6xl mx-auto">
+                <div className="text-center mb-24">
+                    <h2 className="text-4xl md:text-6xl font-black mb-6">Simple, <span className="text-accent-primary">Transparent</span> Pricing</h2>
+                    <p className="text-lg text-[#94A3B8]">Choose the plan that fits your career goals</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <Card glass className="p-12 border-white/5 flex flex-col hover:border-white/10 transition-all">
+                        <h3 className="text-2xl font-black mb-2">Free</h3>
+                        <div className="text-5xl font-black mb-10">$0<span className="text-lg text-[#64748B] font-medium">/month</span></div>
+                        <div className="space-y-4 mb-12 flex-1">
+                            {['Basic resume analysis', '5 Interview simulations/month', 'Basic skill gap analysis', 'Community support'].map(f => (
+                                <div key={f} className="flex items-center gap-3 text-sm text-[#94A3B8]">
+                                    <CheckCircle2 size={16} className="text-accent-success" /> {f}
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" fullWidth className="h-14 rounded-xl border-white/10 font-bold" onClick={() => navigate('/signup')}>Get Started</Button>
+                    </Card>
+
+                    <Card glass className="p-12 border-accent-primary/40 bg-accent-primary/5 shadow-2xl relative flex flex-col scale-105 z-10 overflow-hidden">
+                        <div className="absolute top-0 right-0 px-6 py-2 bg-accent-primary text-[10px] font-black uppercase tracking-widest rounded-bl-xl shadow-lg">Most Popular</div>
+                        <h3 className="text-2xl font-black mb-2">Pro</h3>
+                        <div className="text-5xl font-black mb-10">$29<span className="text-lg text-[#64748B] font-medium">/month</span></div>
+                        <div className="space-y-4 mb-12 flex-1">
+                            {['Advanced AI resume analysis', 'Unlimited interview simulations', 'Personalized learning roadmaps', 'Market benchmarking & analytics', 'Real-time AI feedback', 'Priority support'].map(f => (
+                                <div key={f} className="flex items-center gap-3 text-sm text-white font-medium">
+                                    <CheckCircle2 size={16} className="text-accent-primary" /> {f}
+                                </div>
+                            ))}
+                        </div>
+                        <Button fullWidth className="h-14 rounded-xl font-bold shadow-xl shadow-accent-primary/20" onClick={() => navigate('/signup')}>Start 14-Day Free Trial</Button>
+                        <p className="text-[10px] text-center mt-4 text-[#64748B] uppercase tracking-widest font-black">No credit card required</p>
+                    </Card>
+                </div>
+            </section>
+
+            {/* FAQ Area */}
+            <section className="py-32 px-8 max-w-4xl mx-auto">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl font-black mb-4">FAQ</h2>
+                </div>
+                <div className="glass-card rounded-3xl p-8 md:p-12 border-white/5">
+                    {[
+                        {
+                            q: "What makes CareerOS AI different?",
+                            a: "Unlike static platforms, CareerOS AI is a dynamic operating system that evolves with your career. We combine deep skill analytics with real-time interview coaching."
+                        },
+                        {
+                            q: "Is there a free trial for the Pro plan?",
+                            a: "Yes! We offer a 14-day free trial of our Pro plan so you can experience the full power of our AI tools without any commitment."
+                        },
+                        {
+                            q: "How does the interview simulator work?",
+                            a: "Our simulator uses custom-trained LLMs to mimic specific job roles and company cultures, providing personalized feedback on both content and delivery."
+                        }
+                    ].map(f => <FAQItem key={f.q} {...f} />)}
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="py-20 px-8 border-t border-white/5">
+                <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+                    <div className="flex flex-col items-center md:items-start gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-accent-primary flex items-center justify-center">
+                                <Zap size={16} className="text-white fill-white/20" />
+                            </div>
+                            <span className="font-bold text-lg">CareerOS AI</span>
+                        </div>
+                        <p className="text-[#64748B] text-sm max-w-xs text-center md:text-left">Building the future of autonomous career navigation.</p>
+                    </div>
+                    <div className="flex gap-12 text-sm font-bold uppercase tracking-widest text-[#64748B]">
+                        {['Platform', 'Pricing', 'Security'].map(l => (
+                            <a key={l} href="#" className="hover:text-white transition-colors">{l}</a>
+                        ))}
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest font-black text-[#64748B]">© 2026 CareerOS AI</p>
                 </div>
             </footer>
         </div>

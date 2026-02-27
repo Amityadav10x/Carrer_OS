@@ -3,19 +3,19 @@
 @source "../**/*.{ts,tsx,html}";
 
 @theme {
-    --color-bg-main: #0B1120;
-    --color-bg-secondary: #111827;
-    --color-bg-card: #1F2937;
-    --color-bg-elevated: #243041;
+    --color-bg-main: #0A0B10;
+    --color-bg-secondary: #0F1117;
+    --color-bg-card: #161922;
+    --color-bg-elevated: #1F2430;
 
-    --color-accent-primary: #4F46E5;
+    --color-accent-primary: #6366F1;
     --color-accent-cyan: #22D3EE;
     --color-accent-purple: #8B5CF6;
     --color-accent-success: #10B981;
     --color-accent-warning: #F59E0B;
     --color-accent-error: #EF4444;
 
-    --color-text-primary: #F9FAFB;
+    --color-text-primary: #FFFFFF;
     --color-text-secondary: #94A3B8;
     --color-text-muted: #64748B;
 
@@ -24,8 +24,8 @@
 
     --font-sans: 'Inter', system-ui, sans-serif;
 
-    --radius-card: 16px;
-    --radius-lg: 20px;
+    --radius-card: 20px;
+    --radius-lg: 24px;
 }
 
 @layer base {
@@ -105,9 +105,84 @@
     }
 
     .glass-card {
-        background: rgba(31, 41, 55, 0.7);
-        backdrop-filter: blur(12px);
+        background: rgba(22, 25, 34, 0.6);
+        backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bg-grid {
+        background-size: 50px 50px;
+        background-image:
+            linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    }
+
+    .bg-network {
+        background-image: radial-gradient(circle at 2px 2px, rgba(99, 102, 241, 0.15) 1px, transparent 0);
+        background-size: 24px 24px;
+    }
+
+    .glow-orb {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        filter: blur(80px);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .animate-float-slow {
+        animation: float-slow 20s infinite ease-in-out;
+    }
+
+    .animate-float-reverse {
+        animation: float-reverse 15s infinite ease-in-out;
+    }
+
+    @keyframes float-slow {
+
+        0%,
+        100% {
+            transform: translate(0, 0) scale(1);
+        }
+
+        33% {
+            transform: translate(100px, -50px) scale(1.1);
+        }
+
+        66% {
+            transform: translate(-50px, 80px) scale(0.9);
+        }
+    }
+
+    @keyframes float-reverse {
+
+        0%,
+        100% {
+            transform: translate(0, 0) scale(1.1);
+        }
+
+        50% {
+            transform: translate(-120px, 60px) scale(1);
+        }
+    }
+
+    .compare-table tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .compare-table th {
+        padding: 24px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 11px;
+        color: #64748B;
+    }
+
+    .compare-table td {
+        padding: 20px 24px;
     }
 }
 
