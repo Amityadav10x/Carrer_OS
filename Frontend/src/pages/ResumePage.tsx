@@ -5,10 +5,12 @@ import { CircularProgress } from '../components/ui/CircularProgress';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { CheckCircle2, AlertCircle, Sparkles, FileText, Download, Upload, ChevronDown } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 // No mock data needed anymore as we use active state from backend
 
 export const ResumePage: React.FC = () => {
+    const { refreshUser } = useAuth();
     // Persistent State Logic
     const [resumeData, setResumeData] = React.useState<{
         id: string | null,
@@ -18,7 +20,7 @@ export const ResumePage: React.FC = () => {
         isScanning: boolean,
         strengths: string[],
         weaknesses: string[],
-        suggestions: { original: string, improved: string }[],
+        suggestions: { id?: string, original: string, improved: string, applied?: boolean, discarded?: boolean }[],
         rawContent: string | null
     }>(() => {
         const saved = localStorage.getItem('career_os_resume_data');
@@ -50,13 +52,43 @@ export const ResumePage: React.FC = () => {
     });
 
     const [isOverlayVisible, setIsOverlayVisible] = React.useState(false);
+    const [roles, setRoles] = React.useState<string[]>([]);
+    const [selectedRole, setSelectedRole] = React.useState<string>(() => {
+        return localStorage.getItem('career_os_selected_role') || '';
+    });
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         localStorage.setItem('career_os_resume_data', JSON.stringify(resumeData));
     }, [resumeData]);
 
+    React.useEffect(() => {
+        localStorage.setItem('career_os_selected_role', selectedRole);
+    }, [selectedRole]);
+
+    React.useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const token = localStorage.getItem('career_os_access_token');
+                const response = await fetch('http://127.0.0.1:8000/v1/skills/roles/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    setRoles(result.data.roles);
+                }
+            } catch (error) {
+                console.error('Failed to fetch roles', error);
+            }
+        };
+        fetchRoles();
+    }, []);
+
     const handleUploadClick = () => {
+        if (!selectedRole) {
+            alert('Please select a target role first.');
+            return;
+        }
         fileInputRef.current?.click();
     };
 
@@ -68,6 +100,7 @@ export const ResumePage: React.FC = () => {
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('target_role', selectedRole);
 
         try {
             const token = localStorage.getItem('career_os_access_token');
@@ -103,7 +136,13 @@ export const ResumePage: React.FC = () => {
                         suggestions: data.suggestions,
                         rawContent: data.raw_content
                     });
+
+                    // Refresh user data (credits)
+                    refreshUser();
                 }
+            } else if (response.status === 402) {
+                alert('Insufficient credits. Please top up your account.');
+                setResumeData(prev => ({ ...prev, isScanning: false }));
             } else {
                 alert(result.message || 'Processing failed');
                 setResumeData(prev => ({ ...prev, isScanning: false }));
@@ -147,6 +186,83 @@ export const ResumePage: React.FC = () => {
         }
     };
 
+    const handleApplySuggestion = async (suggestionId: string) => {
+        if (!resumeData.id || !suggestionId) return;
+
+        try {
+            const token = localStorage.getItem('career_os_access_token');
+            const response = await fetch(`http://127.0.0.1:8000/v1/resumes/suggestions/${suggestionId}/apply/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                // Fetch updated resume data
+                const detailResponse = await fetch(`http://127.0.0.1:8000/v1/resumes/${result.data.resume_id}/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const detailResult = await detailResponse.json();
+
+                if (detailResult.status === 'success') {
+                    const data = detailResult.data;
+                    setResumeData(prev => ({
+                        ...prev,
+                        id: data.id,
+                        score: data.overall_score,
+                        lastSync: 'Just now',
+                        strengths: data.strengths,
+                        weaknesses: data.weaknesses,
+                        suggestions: data.suggestions,
+                        rawContent: data.raw_content
+                    }));
+                }
+            } else {
+                alert(result.message || 'Failed to apply suggestion.');
+            }
+        } catch (error) {
+            console.error('Apply failed', error);
+            alert('Failed to apply suggestion. Please try again.');
+        }
+    };
+
+    const handleDiscardSuggestion = async (suggestionId: string) => {
+        if (!suggestionId) return;
+
+        try {
+            const token = localStorage.getItem('career_os_access_token');
+            const response = await fetch(`http://127.0.0.1:8000/v1/resumes/suggestions/${suggestionId}/discard/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                // Remove / mark as discarded in local state to hide it
+                setResumeData(prev => ({
+                    ...prev,
+                    suggestions: prev.suggestions.map(s =>
+                        s.id === suggestionId ? { ...s, discarded: true } : s
+                    )
+                }));
+            } else {
+                alert(result.message || 'Failed to discard suggestion.');
+            }
+        } catch (error) {
+            console.error('Discard failed', error);
+            alert('Failed to discard suggestion. Please try again.');
+        }
+    };
+
+    // Filter out discarded suggestions
+    const visibleSuggestions = resumeData.suggestions.filter(s => !s.discarded);
+
     return (
         <AppLayout>
             <input
@@ -161,7 +277,20 @@ export const ResumePage: React.FC = () => {
                     <h1 className="text-3xl font-black text-[#F9FAFB] tracking-tight mb-2">Resume <span className="gradient-text">Intelligence</span></h1>
                     <p className="text-[#94A3B8] font-medium opacity-80">AI-driven analysis and optimization of your professional profile.</p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    <div className="relative group">
+                        <select
+                            value={selectedRole}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                            className="bg-[#0B1120] border border-white/10 rounded-xl px-4 py-2.5 text-xs font-bold text-[#F9FAFB] appearance-none pr-10 focus:outline-none focus:border-accent-cyan/50 transition-all cursor-pointer hover:bg-white/5"
+                        >
+                            <option value="" disabled>Select Target Role</option>
+                            {roles.map(role => (
+                                <option key={role} value={role}>{role}</option>
+                            ))}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none group-hover:text-accent-cyan transition-colors" />
+                    </div>
                     <Button
                         variant="outline"
                         size="md"
@@ -257,13 +386,15 @@ export const ResumePage: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                        {resumeData.suggestions.length > 0 ? (
-                            resumeData.suggestions.map((s, i) => (
-                                <Card glass key={i} className="group hover:border-accent-purple/30 transition-all p-8">
+                        {visibleSuggestions.length > 0 ? (
+                            visibleSuggestions.map((s, i) => (
+                                <Card glass key={s.id || i} className={`group hover:border-accent-purple/30 transition-all p-8 ${s.applied ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <div className="flex items-start justify-between mb-6">
                                         <div className="flex items-center gap-3">
-                                            <Badge variant="purple" className="text-[10px] font-black uppercase tracking-widest">Target Adjustment</Badge>
-                                            <Badge className="bg-white/5 border-white/10 text-[#64748B] text-[9px]">Rank: Optimal</Badge>
+                                            <Badge variant={s.applied ? 'success' : 'purple'} className="text-[10px] font-black uppercase tracking-widest">
+                                                {s.applied ? 'Applied' : 'Target Adjustment'}
+                                            </Badge>
+                                            {!s.applied && <Badge className="bg-white/5 border-white/10 text-[#64748B] text-[9px]">Rank: Optimal</Badge>}
                                         </div>
                                         <ChevronDown size={14} className="text-[#64748B] group-hover:text-accent-purple" />
                                     </div>
@@ -274,22 +405,28 @@ export const ResumePage: React.FC = () => {
                                         </div>
                                         <div className="relative">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-accent-purple mb-3">AI Recommendation</h4>
-                                            <div className="absolute -top-1 -right-1">
-                                                <Sparkles size={12} className="text-accent-purple animate-pulse" />
-                                            </div>
+                                            {!s.applied && (
+                                                <div className="absolute -top-1 -right-1">
+                                                    <Sparkles size={12} className="text-accent-purple animate-pulse" />
+                                                </div>
+                                            )}
                                             <p className="text-sm text-[#F9FAFB] leading-relaxed font-medium">{s.improved}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-white/5">
-                                        <Button variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest">Discard</Button>
-                                        <Button size="sm" className="h-9 px-4 text-[10px] uppercase font-black tracking-widest bg-accent-purple hover:bg-accent-purple/80">Apply Update</Button>
-                                    </div>
+                                    {!s.applied && s.id && (
+                                        <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-white/5">
+                                            <Button variant="ghost" size="sm" onClick={() => handleDiscardSuggestion(s.id!)} className="text-[10px] uppercase font-black tracking-widest hover:text-accent-warning">Discard</Button>
+                                            <Button size="sm" onClick={() => handleApplySuggestion(s.id!)} className="h-9 px-4 text-[10px] uppercase font-black tracking-widest bg-accent-purple hover:bg-accent-purple/80">Apply Update</Button>
+                                        </div>
+                                    )}
                                 </Card>
                             ))
                         ) : (
                             <div className="text-center py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
                                 <Sparkles size={32} className="text-[#475569] mx-auto mb-4" />
-                                <p className="text-[#64748B] text-xs font-black uppercase tracking-widest">Awaiting Analysis Data</p>
+                                <p className="text-[#64748B] text-xs font-black uppercase tracking-widest">
+                                    {resumeData.id ? 'All analysis suggestions applied or discarded.' : 'Awaiting Analysis Data'}
+                                </p>
                             </div>
                         )}
                     </div>

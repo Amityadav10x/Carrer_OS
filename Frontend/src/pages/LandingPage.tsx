@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowRight, Zap, Map, MessageSquare,
     CheckCircle2, Sparkles, Zap as ZapIcon,
-    ChevronDown, Play, Star, Users, Briefcase,
-    Shield, Globe, BarChart3, Search, Activity,
-    Cpu, Target, TrendingUp, Award, Minus
+    ChevronDown, Star, Briefcase,
+    Globe, BarChart3, Activity,
+    Cpu, Target, TrendingUp, Minus
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';

@@ -9,6 +9,9 @@ export interface ApiResponse<T> {
     timestamp: string;
     data: T;
     usage?: any;
+    credits?: {
+        remaining: number;
+    };
     error?: {
         code: string;
         message: string;
@@ -29,7 +32,12 @@ const authService = {
         try {
             const response = await axios.post<ApiResponse<AuthResponse>>(`${API_URL}/login/`, credentials);
             if (response.data.status === 'success') {
-                return response.data.data;
+                const data = response.data.data;
+                // Merge credits if available
+                if (response.data.credits) {
+                    data.user.credits = response.data.credits;
+                }
+                return data;
             }
             throw new Error(response.data.error?.message || 'Login failed');
         } catch (error: any) {
@@ -66,7 +74,11 @@ const authService = {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.data.status === 'success') {
-                return response.data.data;
+                const user = response.data.data;
+                if (response.data.credits) {
+                    user.credits = response.data.credits;
+                }
+                return user;
             }
             throw new Error('Failed to fetch user profile');
         } catch (error: any) {

@@ -60,8 +60,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('career_os_refresh_token');
     };
 
+    const refreshUser = async () => {
+        const token = localStorage.getItem('career_os_access_token');
+        if (token) {
+            try {
+                const userData = await authService.getMe(token);
+                setUser(userData);
+            } catch (e) {
+                console.error('Failed to refresh user data', e);
+            }
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

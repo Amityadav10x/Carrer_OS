@@ -86,6 +86,9 @@ export interface User {
     email: string;
     avatar?: string;
     role?: string;
+    credits?: {
+        remaining: number;
+    };
 }
 
 export interface LoginCredentials {
@@ -105,4 +108,5 @@ export interface AuthContextType {
     login: (email: string, pass: string) => Promise<void>;
     signup: (name: string, email: string, pass: string) => Promise<void>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }

@@ -1,17 +1,105 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Card } from '../components/ui/Card';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { skills } from '../data/mockData';
 import type { Skill } from '../types';
 import { Search, ArrowRight, Sparkles, TrendingUp, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const SkillGapPage: React.FC = () => {
-    const skillsYouHave = skills.filter((s: Skill) => s.level >= 70);
-    const missingSkills = skills.filter((s: Skill) => s.level < 70 && s.level > 0);
-    const marketPriority = [...skills].sort((a: Skill, b: Skill) => b.marketDemand - a.marketDemand);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [skillsYouHave, setSkillsYouHave] = useState<Skill[]>([]);
+    const [missingSkills, setMissingSkills] = useState<Skill[]>([]);
+    const [marketPriority, setMarketPriority] = useState<Skill[]>([]);
+
+    useEffect(() => {
+        const fetchAnalysis = async () => {
+            const targetRole = localStorage.getItem('career_os_selected_role');
+            const token = localStorage.getItem('career_os_access_token');
+
+            if (!targetRole) {
+                setError('Please select a target role on the Resume page before viewing skill gaps.');
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/v1/skills/analyze/', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ target_role: targetRole })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const data = result.data;
+
+                    const have: Skill[] = data.confirmed_skills.map((s: any) => ({
+                        name: s.name,
+                        level: s.confidence || 100,
+                        category: 'have',
+                        marketDemand: 0
+                    }));
+
+                    const missing: Skill[] = data.missing_skills.map((s: any) => ({
+                        name: s.name,
+                        level: 0,
+                        category: 'missing',
+                        priority: s.priority_score,
+                        marketDemand: s.market_demand
+                    }));
+
+                    setSkillsYouHave(have);
+                    setMissingSkills(missing);
+                    setMarketPriority([...missing].sort((a, b) => b.marketDemand - a.marketDemand));
+                } else {
+                    setError(result.message || 'Analysis failed. Please try again.');
+                }
+            } catch (err) {
+                console.error(err);
+                setError('Network error. Please try again later.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAnalysis();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <AppLayout>
+                <div className="flex h-[60vh] flex-col items-center justify-center gap-6">
+                    <div className="w-16 h-16 rounded-full border-4 border-accent-cyan/20 border-t-accent-cyan animate-spin" />
+                    <div className="text-xs font-black text-accent-cyan uppercase tracking-[0.2em] animate-pulse">Running Neural Gap Analysis...</div>
+                </div>
+            </AppLayout>
+        );
+    }
+
+    if (error) {
+        return (
+            <AppLayout>
+                <div className="flex h-[60vh] flex-col items-center justify-center text-center">
+                    <Card glass className="p-10 max-w-md w-full border-accent-warning/20 bg-accent-warning/5">
+                        <TrendingUp size={48} className="text-accent-warning mb-6 mx-auto opacity-80" />
+                        <h2 className="text-xl font-black text-[#F9FAFB] mb-4 tracking-tight">Analysis Error</h2>
+                        <p className="text-[#94A3B8] font-medium text-sm mb-8">{error}</p>
+                        <Link to="/resume">
+                            <Button variant="primary" fullWidth icon={<Sparkles size={16} />}>Go to Resume Page</Button>
+                        </Link>
+                    </Card>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout>
@@ -46,19 +134,27 @@ export const SkillGapPage: React.FC = () => {
                         <Badge variant="success" className="text-[9px]">Verified</Badge>
                     </div>
                     <div className="space-y-8">
-                        {skillsYouHave.map((skill: Skill) => (
-                            <div key={skill.name} className="space-y-3 group">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm font-bold text-[#94A3B8] group-hover:text-accent-success transition-colors">{skill.name}</span>
-                                    <span className="text-xs font-black text-accent-success">{skill.level}%</span>
+                        {skillsYouHave.length > 0 ? (
+                            skillsYouHave.map((skill: Skill) => (
+                                <div key={skill.name} className="space-y-3 group">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-bold text-[#94A3B8] group-hover:text-accent-success transition-colors">{skill.name}</span>
+                                        <span className="text-xs font-black text-accent-success">{skill.level}%</span>
+                                    </div>
+                                    <ProgressBar value={skill.level} color="success" size="sm" />
                                 </div>
-                                <ProgressBar value={skill.level} color="success" size="sm" />
+                            ))
+                        ) : (
+                            <div className="text-center py-10 opacity-60">
+                                <p className="text-[#94A3B8] text-xs uppercase tracking-widest font-bold">No verified skills mapped to this target role yet.</p>
                             </div>
-                        ))}
+                        )}
                     </div>
-                    <Button variant="outline" fullWidth className="mt-12 border-white/5 text-[10px] font-black uppercase tracking-widest text-[#64748B] hover:text-[#94A3B8]">
-                        Rescan Profile
-                    </Button>
+                    <Link to="/resume">
+                        <Button variant="outline" fullWidth className="mt-12 border-white/5 text-[10px] font-black uppercase tracking-widest text-[#64748B] hover:text-[#94A3B8]">
+                            Rescan Profile
+                        </Button>
+                    </Link>
                 </Card>
 
                 {/* Column 2: Missing Skills (Gaps) */}

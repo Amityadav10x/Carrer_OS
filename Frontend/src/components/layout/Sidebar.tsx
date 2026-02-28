@@ -89,6 +89,28 @@ export const Sidebar: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Credits Display */}
+                {user?.credits && (
+                    <div className="px-4 py-3 rounded-2xl bg-white/5 border border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black text-[#64748B] uppercase tracking-widest">Power Reserve</span>
+                            <Zap size={12} className={user.credits.remaining < 100 ? 'text-accent-warning animate-pulse' : 'text-accent-cyan'} />
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className={`text-xl font-black tracking-tight ${user.credits.remaining < 100 ? 'text-accent-warning' : 'text-[#F9FAFB]'}`}>
+                                {user.credits.remaining.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">Credits</span>
+                        </div>
+                        <div className="mt-2 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-1000 ${user.credits.remaining < 100 ? 'bg-accent-warning shadow-[0_0_8px_#F59E0B]' : 'bg-accent-cyan shadow-[0_0_8px_#22D3EE]'}`}
+                                style={{ width: `${Math.min(100, (user.credits.remaining / 1000) * 100)}%` }}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-4 px-5 py-3.5 rounded-xl font-bold text-xs uppercase tracking-widest text-red-500/70 hover:text-red-500 hover:bg-red-500/5 transition-all duration-300 group"
