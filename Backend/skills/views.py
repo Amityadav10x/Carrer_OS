@@ -1,7 +1,15 @@
 from rest_framework import generics, status, permissions
 from core.utils import api_response
 from .serializers import SkillAnalyzeRequestSerializer
+from .models import RoleSkillMatrix
 from .services import SkillGapService
+
+class RoleListView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        roles = RoleSkillMatrix.objects.values_list('role_name', flat=True).distinct()
+        return api_response(data={"roles": list(roles)})
 
 class SkillAnalyzeView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]

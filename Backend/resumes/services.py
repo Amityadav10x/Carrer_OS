@@ -44,7 +44,7 @@ class ResumeAnalysisService:
         return text[:10000] # Safeguard: Truncate to 10k chars
 
     @staticmethod
-    def process_resume(job_id: str, file_path: str):
+    def process_resume(job_id: str, file_path: str, target_role: str):
         """Orchestrates the resume analysis pipeline."""
         start_time = time.time()
         job = AsyncJob.objects.get(id=job_id)
@@ -58,10 +58,11 @@ class ResumeAnalysisService:
             # 2. Extract text
             raw_text = ResumeAnalysisService.extract_text(file_path)
 
-            # 3. Call Gemini
+            # 3. Call Gemini with Role Context
             prompt = f"""
+            Evaluate this resume against the professional standards and expectations of a {target_role}.
             Identify the core strengths, weaknesses, and key professional skills from the following resume text.
-            Also provide specific improvement suggestions.
+            Also provide specific improvement suggestions tailored for a {target_role} position.
             
             RESUME TEXT:
             {raw_text}
@@ -92,21 +93,23 @@ class ResumeAnalysisService:
             with transaction.atomic():
                 # Lock user for credit safety
                 user_locked = User.objects.select_for_update().get(id=user.id)
-                if user_locked.credits < 50:
-                    raise ValueError("Insufficient credits for analysis")
+                
+                # CREDIT LOGIC DISABLED FOR DEVELOPMENT
+                # if user_locked.credits < 50:
+                #     raise PermissionError("Insufficient credits for analysis")
 
                 # Deduct credits
-                user_locked.credits -= 50
-                user_locked.save()
+                # user_locked.credits -= 50
+                # user_locked.save()
 
                 # Create Credit Transaction
-                CreditTransaction.objects.create(
-                    user=user_locked,
-                    type='debit',
-                    source='resume',
-                    amount=50,
-                    reference_id=job.id
-                )
+                # CreditTransaction.objects.create(
+                #     user=user_locked,
+                #     type='debit',
+                #     source='resume',
+                #     amount=50,
+                #     reference_id=job.id
+                # )
 
                 # Save Resume
                 current_version = Resume.objects.filter(user=user_locked).count() + 1
@@ -118,7 +121,8 @@ class ResumeAnalysisService:
                     extracted_skills=analysis_data.extracted_skills,
                     strengths=analysis_data.strengths,
                     weaknesses=analysis_data.weaknesses,
-                    raw_content=raw_text
+                    raw_content=raw_text,
+                    target_role=target_role
                 )
 
                 # Save Suggestions
@@ -145,6 +149,12 @@ class ResumeAnalysisService:
                 job.result_reference = resume.id
                 job.save()
 
+        except PermissionError as e:
+            logger.warning(f"Credit check failed: {str(e)}")
+            job.status = 'failed'
+            job.error_message = str(e)
+            job.save()
+            raise e
         except Exception as e:
             logger.error(f"Analysis pipeline failed: {str(e)}")
             job.status = 'failed'
@@ -220,3 +230,107 @@ class ResumeExportService:
         pdf_data = buffer.getvalue()
         buffer.close()
         return pdf_data
+
+class ResumeUpdateService:
+    @staticmethod
+    def apply_suggestion(user, suggestion_id: str) -> Resume:
+        """
+        Applies a suggestion to the latest resume version, creating a new version.
+        Implements strict safeguards for data integrity.
+        """
+        with transaction.atomic():
+            # 1. Fetch & Validate Suggestion
+            try:
+                suggestion = ResumeSuggestion.objects.select_for_update().get(id=suggestion_id, resume__user=user)
+            except ResumeSuggestion.DoesNotExist:
+                raise ValueError("Suggestion not found or access denied.")
+
+            # Safeguard: State Protection
+            if suggestion.applied:
+                raise ValueError("This suggestion has already been applied.")
+            if suggestion.discarded:
+                raise ValueError("Cannot apply a discarded suggestion.")
+
+            # 2. Fetch Latest Resume & Validate Soft Delete
+            latest_resume = Resume.objects.filter(user=user).order_by('-version').first()
+            if not latest_resume:
+                raise ValueError("No active resume found.")
+                
+            # Note: Core models Manager usually hides soft-deleted
+            # To be absolutely sure, we can check deleted_at if accessible
+            if hasattr(latest_resume, 'deleted_at') and latest_resume.deleted_at is not None:
+                raise ValueError("Cannot modify a deleted resume.")
+
+            # Safeguard: Version Locking
+            if suggestion.resume_id != latest_resume.id:
+                raise ValueError("Suggestions can only be applied to the latest resume version. Please generate new suggestions for your current resume.")
+
+            # 3. Safeguard: Safe Text Replacement (First match only)
+            raw_content = latest_resume.raw_content or ""
+            if suggestion.original not in raw_content:
+                raise ValueError("Original text no longer found in resume. The resume may have been altered.")
+            
+            # Replace only the first occurrence
+            new_raw_content = raw_content.replace(suggestion.original, suggestion.improved, 1)
+
+            # 4. Clone Resume
+            new_version_num = latest_resume.version + 1
+            
+            # Safeguard: Deterministic Score Update
+            new_score = min(100, latest_resume.overall_score + 3)
+
+            new_resume = Resume.objects.create(
+                user=user,
+                version=new_version_num,
+                previous_version=latest_resume,
+                overall_score=new_score,
+                normalized=True,
+                extracted_skills=latest_resume.extracted_skills,
+                strengths=latest_resume.strengths,
+                weaknesses=latest_resume.weaknesses,
+                raw_content=new_raw_content,
+                target_role=latest_resume.target_role
+            )
+
+            # 5. Clone remaining suggestions to the new resume
+            old_suggestions = ResumeSuggestion.objects.filter(resume=latest_resume)
+            new_suggestions = []
+            for old_s in old_suggestions:
+                is_current = str(old_s.id) == str(suggestion.id)
+                new_suggestions.append(
+                    ResumeSuggestion(
+                        resume=new_resume,
+                        original=old_s.original,
+                        improved=old_s.improved,
+                        applied=True if is_current else old_s.applied,
+                        discarded=old_s.discarded
+                    )
+                )
+            ResumeSuggestion.objects.bulk_create(new_suggestions)
+
+            # 6. Mark Original Suggestion Applied for history
+            suggestion.applied = True
+            suggestion.save()
+
+            return new_resume
+
+    @staticmethod
+    def discard_suggestion(user, suggestion_id: str) -> bool:
+        """
+        Marks a suggestion as discarded without modifying the resume.
+        """
+        with transaction.atomic():
+            try:
+                suggestion = ResumeSuggestion.objects.select_for_update().get(id=suggestion_id, resume__user=user)
+            except ResumeSuggestion.DoesNotExist:
+                raise ValueError("Suggestion not found or access denied.")
+                
+            if suggestion.applied:
+                raise ValueError("Cannot discard an already applied suggestion.")
+            if suggestion.discarded:
+                return True # Already discarded, idempotent
+                
+            suggestion.discarded = True
+            suggestion.save()
+            
+            return True

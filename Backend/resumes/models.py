@@ -12,6 +12,7 @@ class Resume(BaseModel):
     strengths = models.JSONField(default=list)
     weaknesses = models.JSONField(default=list)
     raw_content = models.TextField(null=True, blank=True)
+    target_role = models.CharField(max_length=255, null=True, blank=True, db_index=True)
 
     def __str__(self):
         return f"{self.user.email} - v{self.version} ({self.overall_score})"
@@ -21,6 +22,7 @@ class ResumeSuggestion(BaseModel):
     original = models.TextField()
     improved = models.TextField()
     applied = models.BooleanField(default=False, db_index=True)
+    discarded = models.BooleanField(default=False, db_index=True)
 
     def __str__(self):
         return f"Suggestion for {self.resume.id}"

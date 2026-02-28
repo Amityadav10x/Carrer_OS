@@ -71,8 +71,9 @@ class MeView(generics.RetrieveAPIView):
         return self.request.user
 
     def get(self, request, *args, **kwargs):
-        user_data = self.get_serializer(self.get_object()).data
-        # Mocking usage data for now as per contract v1.2
+        user = self.get_object()
+        user_data = self.get_serializer(user).data
+        # Mocking usage data for now but including real credits
         usage = {
             "total_tokens_allocated": 10000,
             "tokens_used": 1550,

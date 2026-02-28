@@ -5,10 +5,15 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    credits = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'name', 'email', 'role', 'created_at')
-        read_only_fields = ('id', 'role', 'created_at')
+        fields = ('id', 'name', 'email', 'role', 'credits', 'created_at')
+        read_only_fields = ('id', 'role', 'credits', 'created_at')
+
+    def get_credits(self, obj):
+        return {"remaining": obj.credits}
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

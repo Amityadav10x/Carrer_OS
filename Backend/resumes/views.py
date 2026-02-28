@@ -14,11 +14,29 @@ class ResumeUploadView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         file_obj = request.FILES.get('file')
+        target_role = request.data.get('target_role')
+
         if not file_obj:
             return api_response(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 error_code="MISSING_FILE",
                 message="No file provided"
+            )
+
+        if not target_role:
+            return api_response(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_code="MISSING_ROLE",
+                message="Target role is required"
+            )
+
+        # Validate Role
+        from skills.models import RoleSkillMatrix
+        if not RoleSkillMatrix.objects.filter(role_name=target_role).exists():
+            return api_response(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                error_code="INVALID_ROLE",
+                message=f"Role '{target_role}' is not supported yet"
             )
 
         # 1. Validate File Size (Max 5MB)
@@ -52,7 +70,7 @@ class ResumeUploadView(generics.GenericAPIView):
 
         # 5. Trigger synchronous processing (as requested for now)
         try:
-            ResumeAnalysisService.process_resume(str(job.id), file_path)
+            ResumeAnalysisService.process_resume(str(job.id), file_path, target_role=target_role)
             # Re-fetch job to get result reference
             job.refresh_from_db()
             
@@ -71,6 +89,12 @@ class ResumeUploadView(generics.GenericAPIView):
                     error_code="PROCESSING_FAILED",
                     message=job.error_message or "Resume analysis failed"
                 )
+        except PermissionError as e:
+            return api_response(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                error_code="INSUFFICIENT_CREDITS",
+                message=str(e)
+            )
         except Exception as e:
             return api_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -120,5 +144,58 @@ class ResumeExportView(generics.GenericAPIView):
             return api_response(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 error_code="EXPORT_FAILED",
+                message=str(e)
+            )
+
+from .services import ResumeUpdateService
+
+class SuggestionApplyView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id, *args, **kwargs):
+        try:
+            new_resume = ResumeUpdateService.apply_suggestion(request.user, str(id))
+            return api_response(
+                data={
+                    "resume_id": str(new_resume.id),
+                    "new_version": new_resume.version,
+                    "overall_score": new_resume.overall_score,
+                    "normalized": new_resume.normalized
+                },
+                message="Suggestion applied successfully"
+            )
+        except ValueError as e:
+            return api_response(
+                status_code=status.HTTP_409_CONFLICT,
+                error_code="SUGGESTION_APPLY_FAILED",
+                message=str(e)
+            )
+        except Exception as e:
+            return api_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="SYSTEM_ERROR",
+                message=str(e)
+            )
+
+class SuggestionDiscardView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id, *args, **kwargs):
+        try:
+            ResumeUpdateService.discard_suggestion(request.user, str(id))
+            return api_response(
+                data={"suggestion_id": str(id), "discarded": True},
+                message="Suggestion discarded successfully"
+            )
+        except ValueError as e:
+            return api_response(
+                status_code=status.HTTP_409_CONFLICT,
+                error_code="SUGGESTION_DISCARD_FAILED",
+                message=str(e)
+            )
+        except Exception as e:
+            return api_response(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                error_code="SYSTEM_ERROR",
                 message=str(e)
             )

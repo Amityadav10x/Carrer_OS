@@ -4,7 +4,7 @@ from .models import Resume, ResumeSuggestion
 class ResumeSuggestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResumeSuggestion
-        fields = ['id', 'original', 'improved', 'applied']
+        fields = ['id', 'original', 'improved', 'applied', 'discarded']
 
 class ResumeSerializer(serializers.ModelSerializer):
     suggestions = ResumeSuggestionSerializer(many=True, read_only=True)
