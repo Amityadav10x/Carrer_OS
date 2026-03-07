@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     'users',
     'resumes',
     'skills',
-    'roadmap',
+    'roadmaps',
     'interviews',
     'analytics',
     'billing',

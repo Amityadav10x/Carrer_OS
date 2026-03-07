@@ -1,0 +1,36 @@
+Creating test database for alias 'default'...
+
+Found 4 test(s).
+System check identified no issues (0 silenced).
+FEF.
+======================================================================
+ERROR: test_fallback_search_links_when_no_library_match (roadmaps.tests.RoadmapGenerationTests.test_fallback_search_links_when_no_library_match)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Personal_Projects\Carrer Prep AI project\Backend\roadmaps\tests.py", line 143, in test_fallback_search_links_when_no_library_match
+    gap = self.resume.gap_snapshot
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Resume' object has no attribute 'gap_snapshot'
+
+======================================================================
+FAIL: test_duplicate_prevention_archives_old_roadmap (roadmaps.tests.RoadmapGenerationTests.test_duplicate_prevention_archives_old_roadmap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Personal_Projects\Carrer Prep AI project\Backend\roadmaps\tests.py", line 96, in test_duplicate_prevention_archives_old_roadmap
+    self.assertEqual(roadmap2.version, 2)
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_progress_tracking_accuracy (roadmaps.tests.RoadmapGenerationTests.test_progress_tracking_accuracy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Personal_Projects\Carrer Prep AI project\Backend\roadmaps\tests.py", line 131, in test_progress_tracking_accuracy
+    self.assertEqual(updated_roadmap.overall_progress, 67)
+AssertionError: 50 != 67
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.552s
+
+FAILED (failures=2, errors=1)
+Destroying test database for alias 'default'...
+
